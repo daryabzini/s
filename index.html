@@ -1,1 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>So Sorry To Bother You</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
+  :root{
+    --blood:#8a0303;
+    --crimson:#c60d1e;
+    --gold:#d4af37;
+    --void:#050002;
+  }
+
+  html,body{
+    height:100%;
+    background:var(--void);
+    overflow:hidden;
+    font-family:'Cormorant Garamond',serif;
+  }
+
+  body{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* ── ambient fog / vignette ── */
+  .vignette{
+    position:fixed;inset:0;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,.85) 78%, #000 100%);
+    pointer-events:none;
+    z-index:5;
+  }
+
+  .fog{
+    position:fixed;inset:-20%;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(138,3,3,.12), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(138,3,3,.10), transparent 45%);
+    animation: drift 14s ease-in-out infinite alternate;
+    pointer-events:none;
+    z-index:1;
+  }
+  @keyframes drift{
+    0%{transform:translate(0,0) scale(1);}
+    100%{transform:translate(3%,-2%) scale(1.08);}
+  }
+
+  /* ── flicker light rays behind button ── */
+  .spotlight{
+    position:fixed;
+    top:0; left:50%;
+    width:600px; height:100vh;
+    transform:translateX(-50%);
+    background:radial-gradient(ellipse at top, rgba(212,175,55,.10), transparent 60%);
+    pointer-events:none;
+    animation:flicker 5s infinite;
+    z-index:2;
+  }
+  @keyframes flicker{
+    0%,19%,21%,23%,80%,100%{opacity:1;}
+    20%,22%,79%{opacity:.55;}
+  }
+
+  .stage{
+    position:relative;
+    z-index:10;
+    text-align:center;
+    padding:2rem;
+  }
+
+  /* ── button ── */
+  #clickBtn{
+    position:relative;
+    font-family:'Cinzel Decorative', serif;
+    font-weight:700;
+    font-size:clamp(1rem,3vw,1.5rem);
+    letter-spacing:.12em;
+    color:#f4e4c1;
+    padding:1.2rem 3rem;
+    background:linear-gradient(160deg,#1a0000,#3a0000 60%,#1a0000);
+    border:2px solid var(--gold);
+    border-radius:4px;
+    cursor:pointer;
+    text-transform:uppercase;
+    box-shadow:
+      0 0 20px rgba(212,175,55,.35),
+      0 0 60px rgba(138,3,3,.4),
+      inset 0 0 20px rgba(0,0,0,.6);
+    transition:transform .25s, box-shadow .25s, letter-spacing .25s;
+    animation: pulseGlow 2.4s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{
+    0%,100%{box-shadow:0 0 20px rgba(212,175,55,.35),0 0 60px rgba(138,3,3,.4),inset 0 0 20px rgba(0,0,0,.6);}
+    50%{box-shadow:0 0 32px rgba(212,175,55,.6),0 0 90px rgba(138,3,3,.65),inset 0 0 20px rgba(0,0,0,.6);}
+  }
+  #clickBtn:hover{
+    transform:translateY(-3px) scale(1.04);
+    letter-spacing:.18em;
+  }
+  #clickBtn:active{ transform:scale(.95); }
+
+  #clickBtn.hidden-btn{
+    opacity:0;
+    pointer-events:none;
+    transform:scale(.8);
+    transition:opacity .5s, transform .5s;
+  }
+
+  /* ── dramatic reveal text ── */
+  #revealWrap{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    z-index:20;
+    pointer-events:none;
+  }
+
+  .drama-text{
+    font-family:'Cinzel Decorative', serif;
+    font-weight:900;
+    font-size:clamp(1.8rem, 7vw, 4.5rem);
+    text-align:center;
+    line-height:1.35;
+    padding:0 1rem;
+    filter:drop-shadow(0 0 25px rgba(198,13,30,.65)) drop-shadow(0 0 55px rgba(212,175,55,.4));
+    opacity:0;
+    letter-spacing:.02em;
+  }
+
+  .drama-text.line1{ margin-bottom:.4em; }
+
+  .drama-text .word{
+    display:inline-block;
+    opacity:0;
+    transform:translateY(40px) scale(.6) rotate(-4deg);
+    filter:blur(6px);
+    background:linear-gradient(180deg,#fff6d8 0%, var(--gold) 45%, var(--crimson) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+
+  /* ── final settled / clear state ── */
+  .text-glow-bg{
+    position:fixed;
+    top:50%; left:50%;
+    width:min(90vw,700px); height:min(90vw,420px);
+    transform:translate(-50%,-50%) scale(.85);
+    background:radial-gradient(ellipse at center, rgba(30,10,10,.75) 0%, rgba(20,5,5,.35) 45%, transparent 75%);
+    z-index:12;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 1s ease, transform 1.2s ease;
+  }
+  .text-glow-bg.show{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
+
+  .drama-text.settled{
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.85)) drop-shadow(0 0 18px rgba(212,175,55,.55));
+    transition: filter 1s ease;
+  }
+  .drama-text.settled .word{
+    background:linear-gradient(180deg,#fffaf0 0%, #ffe9b8 45%, #f4c977 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    transition: background 1s ease;
+  }
+
+  /* white flash */
+  .flash{
+    position:fixed; inset:0;
+    background:#fff;
+    z-index:50;
+    opacity:0;
+    pointer-events:none;
+  }
+
+  /* screen crack lines (subtle decorative) */
+  .crack{
+    position:fixed; inset:0;
+    z-index:15;
+    opacity:0;
+    pointer-events:none;
+    background:
+      linear-gradient(105deg, transparent 48%, rgba(255,255,255,.5) 49%, transparent 51%),
+      linear-gradient(70deg, transparent 60%, rgba(255,255,255,.35) 61%, transparent 63%);
+    mix-blend-mode:screen;
+  }
+
+  /* shake classes */
+  .shake{ animation: shakeIt .5s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes shakeIt{
+    10%,90%{transform:translate3d(-2px,0,0);}
+    20%,80%{transform:translate3d(4px,0,0);}
+    30%,50%,70%{transform:translate3d(-8px,0,0);}
+    40%,60%{transform:translate3d(8px,0,0);}
+  }
+
+  /* ember particles */
+  .ember{
+    position:fixed;
+    bottom:-10px;
+    border-radius:50%;
+    background:radial-gradient(circle, #ffd27a, var(--crimson) 70%);
+    box-shadow:0 0 8px rgba(255,150,60,.8);
+    pointer-events:none;
+    z-index:8;
+    animation: emberRise linear forwards;
+  }
+  @keyframes emberRise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:1; }
+    100%{ transform:translateY(-110vh) translateX(var(--ex,0px)); opacity:0; }
+  }
+
+  /* restore link */
+  #again{
+    margin-top:2.4rem;
+    display:inline-block;
+    font-family:'Cormorant Garamond',serif;
+    font-style:italic;
+    font-size:1rem;
+    color:rgba(212,175,55,.75);
+    letter-spacing:.05em;
+    opacity:0;
+    cursor:pointer;
+    border-bottom:1px solid rgba(212,175,55,.4);
+    padding-bottom:2px;
+    transition:color .2s, opacity .6s .3s;
+  }
+  #again:hover{ color:#fff6d8; }
+  #again.show{ opacity:1; pointer-events:all; }
+  #again:not(.show){ pointer-events:none; }
+
+</style>
+</head>
+<body>
+
+  <div class="fog"></div>
+  <div class="spotlight"></div>
+  <div class="vignette"></div>
+  <div class="crack" id="crack"></div>
+  <div class="flash" id="flash"></div>
+
+  <div class="stage">
+    <button id="clickBtn" onclick="trigger()"> 👀 </button>
+  </div>
+
+  <div class="text-glow-bg" id="textGlow"></div>
+
+  <div id="revealWrap">
+    <div>
+      <div class="drama-text line1" id="line1"></div>
+      <div class="drama-text line2" id="line2" style="font-size:clamp(1.3rem,4.2vw,2.6rem);"></div>
+      <div style="text-align:center;">
+        <span id="again" onclick="resetScene()">✦ 🔄 ✦</span>
+      </div>
+    </div>
+  </div>
+
+<script>
+const btn = document.getElementById('clickBtn');
+const flash = document.getElementById('flash');
+const crack = document.getElementById('crack');
+const line1 = document.getElementById('line1');
+const line2 = document.getElementById('line2');
+const again = document.getElementById('again');
+const textGlow = document.getElementById('textGlow');
+
+function wrapWords(el, text){
+  el.innerHTML = text.split(' ').map(w => `<span class="word">${w}</span>`).join(' ');
+}
+
+wrapWords(line1, "I'm So Sorry");
+wrapWords(line2, "to make you angry 🥲👉🏻👈🏻...");
+
+function trigger(){
+  btn.disabled = true;
+  btn.classList.add('shake');
+  document.body.classList.add('shake');
+
+  // white flash + crack
+  setTimeout(()=>{
+    flash.style.transition = 'opacity .06s';
+    flash.style.opacity = '1';
+    crack.style.transition = 'opacity .08s';
+    crack.style.opacity = '.9';
+    spawnEmbers();
+  }, 250);
+
+  setTimeout(()=>{
+    flash.style.transition = 'opacity .6s';
+    flash.style.opacity = '0';
+    crack.style.transition = 'opacity .8s';
+    crack.style.opacity = '0';
+  }, 340);
+
+  // hide button
+  setTimeout(()=>{
+    btn.classList.add('hidden-btn');
+  }, 300);
+
+  // reveal text word by word, line 1 then line 2
+  setTimeout(()=> textGlow.classList.add('show'), 450);
+  setTimeout(()=> revealLine(line1, 0), 500);
+  setTimeout(()=> revealLine(line2, 90), 1500);
+
+  // once both lines have fully risen in, settle them into a crisp, clearly
+  // readable final state (brighter, sharper, no lingering blur/motion)
+  setTimeout(()=>{
+    line1.classList.add('settled');
+    line2.classList.add('settled');
+  }, 2750);
+
+  setTimeout(()=>{
+    again.classList.add('show');
+  }, 3200);
+}
+
+function revealLine(el, startDelay){
+  const words = el.querySelectorAll('.word');
+  words.forEach((w, i)=>{
+    setTimeout(()=>{
+      w.style.transition = 'opacity .7s cubic-bezier(.2,.9,.3,1), transform .7s cubic-bezier(.2,.9,.3,1), filter .7s';
+      w.style.opacity = '1';
+      w.style.transform = 'translateY(0) scale(1) rotate(0deg)';
+      w.style.filter = 'blur(0)';
+    }, startDelay + i*160);
+  });
+  el.style.transition = 'opacity .3s';
+  el.style.opacity = '1';
+}
+
+function spawnEmbers(){
+  for(let i=0;i<26;i++){
+    setTimeout(()=>{
+      const e = document.createElement('div');
+      e.className = 'ember';
+      const size = Math.random()*5+3;
+      e.style.width = size+'px';
+      e.style.height = size+'px';
+      e.style.left = (Math.random()*100)+'%';
+      e.style.setProperty('--ex', (Math.random()-0.5)*160+'px');
+      e.style.animationDuration = (Math.random()*2.5+2.5)+'s';
+      document.body.appendChild(e);
+      setTimeout(()=> e.remove(), 5200);
+    }, i*40);
+  }
+}
+
+function resetScene(){
+  // fade out text
+  [line1, line2].forEach(el=>{
+    el.style.transition = 'opacity .5s';
+    el.style.opacity = '0';
+  });
+  again.classList.remove('show');
+  textGlow.classList.remove('show');
+
+  setTimeout(()=>{
+    line1.classList.remove('settled');
+    line2.classList.remove('settled');
+    wrapWords(line1, "I'm So Sorry");
+    wrapWords(line2, "to bother you...");
+    btn.classList.remove('hidden-btn');
+    btn.disabled = false;
+    btn.classList.remove('shake');
+  }, 550);
+}
+</script>
+</body>
+</html>
